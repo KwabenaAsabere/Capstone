@@ -277,21 +277,26 @@ ggplot(df_vl_summary, aes(x = viral_load, y = proportion, fill = time)) +
     size = 0.5
   ) +
   scale_y_continuous(labels = scales::percent_format()) +
-  labs(x = "Viral Load", y = "Proportion of individuals", fill = "Time") +
+  labs(x = "Viral Load", 
+       y = "Proportion of individuals", 
+       fill = "Time",
+       title = "Viral Load Levels") +
   
   theme_minimal()+
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 ```
 
-### **Proportion taking ART pills less frequently / in smaller amounts**
+### **Proportion taking ART pills less frequently / in smaller amounts by Sex**
 
 ```{r}
 df6 %>% group_by(sex,artstrbc) %>% 
@@ -341,7 +346,12 @@ df_artstr_summary <- bind_rows(df_artstr_summary, df_artstr_totals) %>%
 
 
 
-df_artstr_summary
+df_artstr_summary <-  df_artstr_summary %>% 
+  mutate(
+    time = as_factor(time) %>% 
+      fct_relevel("Before Covid-19"),
+    sex = as_factor(sex)
+  )
 
 
 
@@ -356,28 +366,30 @@ reduced_art_intake_plot <- ggplot(df_artstr_summary, aes(x = sex, y = proportion
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.12))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20))+
   labs(
-    title = " Reduced ART Intake",
+    title = "Reduced ART Intake",
     x = "Sex",
     y = "Proportion of Individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 reduced_art_intake_plot
 
 ```
 
-### **Run out of ART before next refill**
+### **Run out of ART before next refill by Sex**
 
 ```{r}
 df6 %>% group_by(sex,artrunbc) %>% 
@@ -397,7 +409,7 @@ df_artrun <- df6 %>%
     values_to = "response"
   ) %>%
   mutate(
-    time = if_else(grepl("bc$", variable), "Before", "After"),
+    time = if_else(grepl("bc$", variable), "Before Covid-19", "After Covid-19"),
     variable = "Run out of ART before next refill"
   )
 
@@ -433,7 +445,12 @@ df_artrun_summary <- bind_rows(df_artrun_summary, df_artrun_totals) %>%
         sex= if_else(is.na(sex),"Total",sex))
 
 
-df_artrun_summary
+df_artrun_summary <-  df_artrun_summary %>% 
+  mutate(
+    time = as_factor(time) %>% 
+      fct_relevel("Before Covid-19"),
+    sex = as_factor(sex)
+  )
 ```
 
 ```{r}
@@ -445,7 +462,7 @@ run_out_of_art_plot <- ggplot(df_artrun_summary, aes(x = sex, y = proportion,fil
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.12)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20)) +
   labs(
     title = "Run Out of ART",
     x = "Sex",
@@ -454,19 +471,21 @@ run_out_of_art_plot <- ggplot(df_artrun_summary, aes(x = sex, y = proportion,fil
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 run_out_of_art_plot
 
 
 ```
 
-### **Missed Scheduled Visits**
+### **Missed Scheduled Visits by Sex**
 
 ```{r}
 df6 %>% group_by(sex,hivbc) %>% 
@@ -484,7 +503,7 @@ df_hiv <- df6 %>%
     values_to = "response"
   ) %>%
   mutate(
-    time = if_else(grepl("bc$", variable), "Before", "After"),
+    time = if_else(grepl("bc$", variable), "Before Covid-19", "After Covid-19"),
     variable = "Missed Scheduled Visits"
   )
 
@@ -517,7 +536,12 @@ df_hiv_summary <- bind_rows(df_hiv_summary, df_hiv_totals) %>%
 
 
 
-df_hiv_summary
+df_hiv_summary <-  df_hiv_summary %>% 
+  mutate(
+    time = as_factor(time) %>% 
+      fct_relevel("Before Covid-19"),
+    sex = as_factor(sex)
+  )
 ```
 
 ```{r}
@@ -529,7 +553,7 @@ missed_scheduled_visit_plot <-  ggplot(df_hiv_summary, aes(x = sex, y = proporti
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.12)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20)) +
   labs(
     title = "Missed Scheduled Visits",
     x = "Sex",
@@ -538,12 +562,14 @@ missed_scheduled_visit_plot <-  ggplot(df_hiv_summary, aes(x = sex, y = proporti
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 missed_scheduled_visit_plot
@@ -551,14 +577,6 @@ missed_scheduled_visit_plot
 ```
 
 ### Combined Plots
-
-```{r}
-a <- missed_scheduled_visit_plot
-b <- reduced_art_intake_plot
-c <- run_out_of_art_plot
-
-
-```
 
 ```{r}
 ps1 <- ggplot(df_hiv_summary, aes(x = sex, y = proportion, fill = time)) +
@@ -569,21 +587,23 @@ ps1 <- ggplot(df_hiv_summary, aes(x = sex, y = proportion, fill = time)) +
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.12)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20)) +
   labs(
-    caption = "Missed Scheduled Visits",
+    title = "Missed Scheduled Visits",
     x = "Sex",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 ps1 ## Missed scheduled visits
 ```
@@ -598,21 +618,23 @@ ps2 <- ggplot(df_artstr_summary, aes(x = sex, y = proportion, fill = time)) +
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.12))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20))+
   labs(
-    caption = " Reduced ART Intake",
+    title = " Reduced ART Intake",
     x = "Sex",
     y = "Proportion of Individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+   legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 ps2
 
@@ -628,21 +650,23 @@ ps3 <- ggplot(df_artrun_summary, aes(x = sex, y = proportion, fill = time)) +
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.12)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20)) +
   labs(
-    caption =  "Run Out of ART",
+    title =  "Run Out of ART",
     x = "Sex",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption =  element_text(hjust = 0, face = "bold", size = 10),
+    plot.title =  element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 ps3
@@ -775,12 +799,14 @@ reduced_art_intake_by_community_plot <- ggplot(df_com_artstr_summary, aes(x = co
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 reduced_art_intake_by_community_plot
@@ -862,12 +888,14 @@ missed_scheduled_visit_by_community_type_plot <-  ggplot(df_com_hiv_summary, aes
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 missed_scheduled_visit_by_community_type_plot
@@ -953,12 +981,14 @@ run_out_of_art_by_community_plot <- ggplot(df_com_artrun_summary, aes(x = commun
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 run_out_of_art_by_community_plot
 ```
@@ -972,21 +1002,23 @@ pc1 <- ggplot(df_com_artstr_summary, aes(x = community_type, y = proportion, fil
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.15)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.25)) +
   labs(
-    caption = "Reduced ART Intake",
+    title = "Reduced ART Intake",
     x = "Community Type",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 pc1 ## 
 ```
@@ -1000,21 +1032,23 @@ pc2 <- ggplot(df_com_hiv_summary, aes(x = community_type, y = proportion, fill =
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.15)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.25)) +
   labs(
-    caption = "Missed Scheduled Visits",
+    title = "Missed Scheduled Visits",
     x = "Community Type",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 pc2 ## Missed scheduled visits
 ```
@@ -1029,21 +1063,23 @@ pc3 <- ggplot(df_com_artrun_summary, aes(x = community_type, y = proportion, fil
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.12)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.25)) +
   labs(
-    caption =  "Run Out of ART",
+    title =  "Run Out of ART",
     x = "Community Type",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption =  element_text(hjust = 0, face = "bold", size = 10),
+    plot.title =  element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 pc3
@@ -1180,12 +1216,14 @@ run_out_of_art_by_mobility_plot <- ggplot(df_mob_artrun_summary, aes(x = mobilit
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 run_out_of_art_by_mobility_plot
 ```
@@ -1259,12 +1297,14 @@ reduced_art_intake_by_mobility_plot <- ggplot(df_mob_artstr_summary, aes(x = mob
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 reduced_art_intake_by_mobility_plot
@@ -1346,12 +1386,14 @@ missed_scheduled_visit_by_mobility_plot <-  ggplot(df_mob_hiv_summary, aes(x = m
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 missed_scheduled_visit_by_mobility_plot
@@ -1366,21 +1408,23 @@ pm1 <- ggplot(df_mob_artstr_summary, aes(x = mobility, y = proportion, fill =tim
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.25)) +
   labs(
-    caption = "Reduced ART Intake",
+    title = "Reduced ART Intake",
     x = "Mobility",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 pm1 ##
 ```
@@ -1394,7 +1438,7 @@ pm2 <- ggplot(df_mob_hiv_summary, aes(x = mobility, y = proportion, fill = time)
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.25)) +
   labs(
     caption = "Missed Scheduled Visits",
     x = "Mobility",
@@ -1408,7 +1452,9 @@ pm2 <- ggplot(df_mob_hiv_summary, aes(x = mobility, y = proportion, fill = time)
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 pm2 ## Missed scheduled vis
 ```
@@ -1422,21 +1468,23 @@ pm3 <- ggplot(df_mob_artrun_summary, aes(x = mobility, y = proportion, fill =tim
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.20)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),limits = c(0, 0.25)) +
   labs(
-    caption =  "Run Out of ART",
+    title =  "Run Out of ART",
     x = "Mobility",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption =  element_text(hjust = 0, face = "bold", size = 10),
+    plot.title =  element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 pm3
@@ -1565,7 +1613,7 @@ run_out_of_art_by_age_plot <- ggplot(df_age_artrun_summary, aes(x = age_cat, y =
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.15)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.16)) +
   labs(
     title = "Run Out of ART",
     x = "Age Category",
@@ -1574,12 +1622,14 @@ run_out_of_art_by_age_plot <- ggplot(df_age_artrun_summary, aes(x = age_cat, y =
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 run_out_of_art_by_age_plot
 
@@ -1653,7 +1703,7 @@ missed_scheduled_visit_by_age_plot <- ggplot(df_age_hiv_summary, aes(x = age_cat
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.15)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.16)) +
   labs(
     title = "Missed Scheduled Visits",
     x = "Age Category",
@@ -1662,12 +1712,14 @@ missed_scheduled_visit_by_age_plot <- ggplot(df_age_hiv_summary, aes(x = age_cat
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 missed_scheduled_visit_by_age_plot
@@ -1737,7 +1789,7 @@ reduced_art_intake_by_age_plot <- ggplot(df_age_artstr_summary, aes(x = age_cat,
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.15)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.16)) +
   labs(
     title = "Reduced ART Intake",
     x = "Age Category",
@@ -1746,12 +1798,14 @@ reduced_art_intake_by_age_plot <- ggplot(df_age_artstr_summary, aes(x = age_cat,
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 reduced_art_intake_by_age_plot
@@ -1768,21 +1822,23 @@ pa1 <- ggplot(df_age_artstr_summary, aes(x = age_cat, y = proportion, fill = tim
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.15)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
   labs(
-    caption = "Reduced ART Intake",
+    title = "Reduced ART Intake",
     x = "Age Category",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 pa1
 ```
@@ -1796,21 +1852,23 @@ pa2 <- ggplot(df_age_hiv_summary, aes(x = age_cat, y = proportion, fill = time))
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.15)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
   labs(
-    caption = "Missed Scheduled Visits",
+    title = "Missed Scheduled Visits",
     x = "Age Category",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 pa2
@@ -1825,21 +1883,23 @@ pa3 <- ggplot(df_age_artrun_summary, aes(x = age_cat, y = proportion, fill = tim
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.12)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
   labs(
-    caption = "Run Out of ART",
+   title = "Run Out of ART",
     x = "Age Category",
     y = "Proportion of individuals",
     fill = "Time"
   ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "bold", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 pa3
@@ -1979,12 +2039,14 @@ reduced_art_intake_by_duration_plot <- ggplot(df_dur_artstr_summary, aes(x = art
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 reduced_art_intake_by_duration_plot
@@ -2069,12 +2131,14 @@ run_out_of_art_by_duration_plot <- ggplot(df_dur_artrun_summary, aes(x = art_dur
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 run_out_of_art_by_duration_plot
@@ -2159,12 +2223,14 @@ missed_scheduled_visit_by_duration_plot <- ggplot(df_dur_hiv_summary, aes(x = ar
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    axis.title.x = element_text(face = "bold", size = 12),
-    axis.title.y = element_text(face = "bold", size = 12),
-    legend.title = element_text(face = "bold", size = 12),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
     legend.text = element_text(size = 10),
-    legend.position = "top"
+    legend.position = c(0, 1),
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
   )
 
 missed_scheduled_visit_by_duration_plot
@@ -2180,7 +2246,7 @@ pd1 <- ggplot(df_dur_artstr_summary, aes(x = art_duration, y = proportion, fill 
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.20)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
   labs(
     title = "Reduced ART Intake",
     x = "ART Duration",
@@ -2211,7 +2277,7 @@ pd2 <- ggplot(df_dur_hiv_summary, aes(x = art_duration, y = proportion, fill = t
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.20)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
   labs(
     title = "Missed Scheduled Visits",
     x = "ART Duration",
@@ -2220,7 +2286,7 @@ pd2 <- ggplot(df_dur_hiv_summary, aes(x = art_duration, y = proportion, fill = t
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
@@ -2242,7 +2308,7 @@ pd3 <- ggplot(df_dur_artrun_summary, aes(x = art_duration, y = proportion, fill 
     width = 0.2,
     size = 1
   ) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.20)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
   labs(
     title = "Run Out of ART",
     x = "ART Duration",
@@ -2251,7 +2317,7 @@ pd3 <- ggplot(df_dur_artrun_summary, aes(x = art_duration, y = proportion, fill 
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
     axis.title.x = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 10),
     legend.title = element_text(face = "bold", size = 10),
@@ -2270,4 +2336,438 @@ pd3
 
 ### Combined plot
 (pd1 + pd2)/pd3
+```
+
+# Any disruption subplots
+
+```{r}
+df_disruption <-  rakai %>% 
+   select(ageyrs,sex,mobility,arthoac,artrunac,artstrac,
+    artyrs,comm_num,artrunbc,artstrbc,hivac,hivbc,copies,new_copies) %>% 
+   mutate(
+     age_cat = case_when(
+       ageyrs < 30 ~ "<30",
+       ageyrs >= 30 & ageyrs <= 39 ~  "30-39",
+       ageyrs >=40 & ageyrs <= 49 ~ "40-49") %>% 
+       fct_relevel("<30") %>% 
+       ff_label("Age group"),
+     
+     sex = if_else(sex == "F","Female","Male") %>% 
+       as_factor() %>%
+       fct_relevel("Female") %>% 
+       ff_label("Sex"),
+     
+     mobility = case_when(
+       mobility %in% c(3,8,10) ~ "In-migrant",
+       .default = "Long-term resident") %>% 
+       fct_relevel("In-migrant") %>% 
+       ff_label("Migration"),
+     
+     community_type = case_when(
+       comm_num %in% c(38,770,771,774) ~ "Fishing community",
+       .default = "Inland Community") %>% 
+       fct_relevel("Inland Community") %>% 
+       ff_label("Community type"),
+     fishing_comm = if_else(community_type == "Fishing Community",1,0) %>% 
+       ff_label("Lake Victoria Fishing Community"),
+     
+     art_duration = case_when(
+       artyrs >= 2 &  artyrs <= 5 ~ "2-5 years",
+       artyrs > 5 ~ ">5 years",
+       .default =  "<2 years"
+     ) %>% 
+       fct_relevel("<2 years","2-5 years") %>% 
+       ff_label("Time on ART"),
+     
+     hivac = if_else(hivac == 1, 1, 0) %>% 
+       ff_label("Missed scheduled visit for HIV care"),
+     
+     hivbc = if_else(hivbc == 1, 1, 0) %>% 
+       ff_label("Missed scheduled visit for HIV care"),
+     
+     artrunac = if_else(artrunac == 1, 1, 0) %>% 
+       ff_label("Run out of ART before next refill"),
+     
+     artrunbc = if_else(artrunbc == 1, 1, 0) %>% 
+       ff_label("Run out of ART before next refill"),
+     
+     artstrac = if_else(artstrac == 1, 1, 0) %>% 
+       ff_label("Taken ART pills less frequently / in smaller amounts to conserve supply"),
+     
+     artstrbc = if_else(artstrbc == 1, 1, 0) %>% 
+       ff_label("Taken ART pills less frequently / in smaller amounts to conserve supply"),
+     
+    )
+```
+
+```{r}
+
+df_disruption <-  df_disruption %>% 
+  select(sex,age_cat,community_type,art_duration,mobility,hivac,artrunac,artstrac,hivbc,artstrbc,artrunbc)
+```
+
+```{r}
+
+df_disruption <-  df_disruption %>% 
+mutate(any_disruption_b4 = if_else(rowSums(across(hivbc:artrunbc),na.rm = TRUE) > 0,1,0),
+any_disruption_after = if_else(rowSums(across(hivac:artstrac),na.rm = TRUE) > 0,1,0))
+```
+
+```{r}
+table(df_disruption$any_disruption_b4)
+table(df_disruption$any_disruption_after)
+```
+
+```{r}
+
+prepare_data <- function(data, group_var) {
+  grouped_data <- data %>%
+    group_by({{ group_var }}) %>%
+    summarise(
+      n_b4 = sum(any_disruption_b4, na.rm = TRUE),
+      total_b4 = n(),
+      n_after = sum(any_disruption_after, na.rm = TRUE),
+      total_after = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      proportion_b4 = n_b4 / total_b4,
+      proportion_after = n_after / total_after,
+      se_b4 = sqrt(proportion_b4 * (1 - proportion_b4) / total_b4),
+      se_after = sqrt(proportion_after * (1 - proportion_after) / total_after),
+      lower_b4 = proportion_b4 - 1.96 * se_b4,
+      upper_b4 = proportion_b4 + 1.96 * se_b4,
+      lower_after = proportion_after - 1.96 * se_after,
+      upper_after = proportion_after + 1.96 * se_after
+    ) %>%
+    pivot_longer(
+      cols = starts_with("proportion"),
+      names_to = "time",
+      values_to = "proportion"
+    ) %>%
+    mutate(
+      time = if_else(time == "proportion_b4", "Before Covid-19", "After Covid-19"),
+      lower = if_else(time == "Before Covid-19", lower_b4, lower_after),
+      upper = if_else(time == "Before Covid-19", upper_b4, upper_after)
+    ) %>%
+    select({{ group_var }}, time, proportion, lower, upper)
+  
+
+  total_data <- data %>%
+    summarise(
+      n_b4 = sum(any_disruption_b4, na.rm = TRUE),
+      total_b4 = n(),
+      n_after = sum(any_disruption_after, na.rm = TRUE),
+      total_after = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      proportion_b4 = n_b4 / total_b4,
+      proportion_after = n_after / total_after,
+      se_b4 = sqrt(proportion_b4 * (1 - proportion_b4) / total_b4),
+      se_after = sqrt(proportion_after * (1 - proportion_after) / total_after),
+      lower_b4 = proportion_b4 - 1.96 * se_b4,
+      upper_b4 = proportion_b4 + 1.96 * se_b4,
+      lower_after = proportion_after - 1.96 * se_after,
+      upper_after = proportion_after + 1.96 * se_after
+    ) %>%
+    pivot_longer(
+      cols = starts_with("proportion"),
+      names_to = "time",
+      values_to = "proportion"
+    ) %>%
+    mutate(
+      time = if_else(time == "proportion_b4", "Before Covid-19", "After Covid-19"),
+      lower = if_else(time == "Before Covid-19", lower_b4, lower_after),
+      upper = if_else(time == "Before Covid-19", upper_b4, upper_after),
+      {{ group_var }} := "Total" # Add "Total" to the group variable
+    ) %>%
+    select({{ group_var }}, time, proportion, lower, upper)
+
+  bind_rows(grouped_data, total_data)
+}
+
+
+```
+
+```{r}
+
+summary_by_sex <- prepare_data(df_disruption, sex)
+summary_by_age <- prepare_data(df_disruption, age_cat)
+summary_by_mobility <- prepare_data(df_disruption, mobility)
+summary_by_community <- prepare_data(df_disruption, community_type)
+summary_by_art_duration <- prepare_data(df_disruption,art_duration)
+
+```
+
+```{r}
+summary_by_age <-  summary_by_age %>% 
+  mutate(age_cat = as_factor(age_cat) %>% 
+           fct_relevel("<30","30-39","40-49"),
+         time = as_factor(time) %>% 
+           fct_relevel("Before Covid-19"))
+```
+
+```{r}
+summary_by_community <-  summary_by_community %>% 
+  mutate(
+   time = as_factor(time) %>% 
+           fct_relevel("Before Covid-19"),
+   community_type = as_factor(community_type) %>% 
+     fct_relevel("Fishing community")
+  )
+```
+
+```{r}
+summary_by_mobility <-  summary_by_mobility %>% 
+  mutate(
+    time = as_factor(time) %>% 
+           fct_relevel("Before Covid-19"),
+    mobility = as_factor(mobility) %>% 
+      fct_relevel("In-migrant","Long-term resident")
+  )
+```
+
+```{r}
+summary_by_sex <-  summary_by_sex %>% 
+  mutate(
+    time = as_factor(time) %>% 
+           fct_relevel("Before Covid-19"),
+    sex = as_factor(sex) %>% 
+      fct_relevel("Female","Male")
+  )
+```
+
+```{r}
+summary_by_art_duration <-  summary_by_art_duration %>% 
+  mutate(
+    time = as_factor(time) %>% 
+           fct_relevel("Before Covid-19"),
+    art_duration = as_factor(art_duration) %>% 
+      fct_relevel("<2 years","2-5 years", ">5 years","Total")
+  )
+```
+
+### Any Disruption by Sex
+
+```{r}
+
+pr1 <- summary_by_sex %>% 
+ggplot(aes(x = sex, y = proportion, fill = time)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.5) +
+  geom_errorbar(
+    aes(ymin = lower, ymax = upper),
+    position = position_dodge(width = 0.7),
+    width = 0.2,
+    size = 1
+  ) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.20)) +
+  labs(
+    title = "Any Disruption",
+    x = "Sex",
+    y = "Proportion of individuals",
+    fill = "Time"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text = element_text(size = 10),
+    legend.position = c(0, 1), 
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
+  )
+
+pr1
+```
+
+### Any disruption by community type
+
+```{r}
+pr2 <- summary_by_community %>% 
+ggplot(aes(x = community_type, y = proportion, fill = time)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.5) +
+  geom_errorbar(
+    aes(ymin = lower, ymax = upper),
+    position = position_dodge(width = 0.7),
+    width = 0.2,
+    size = 1
+  ) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
+  labs(
+    title = "Any Disruption",
+    x = "Community Type",
+    y = "Proportion of individuals",
+    fill = "Time"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text = element_text(size = 10),
+    legend.position = c(0, 1), 
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
+  )
+
+pr2
+```
+
+### Any disruption by age category
+
+```{r}
+pr3 <- summary_by_age %>% 
+ggplot(aes(x = age_cat, y = proportion, fill = time)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.5) +
+  geom_errorbar(
+    aes(ymin = lower, ymax = upper),
+    position = position_dodge(width = 0.7),
+    width = 0.2,
+    size = 1
+  ) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
+  labs(
+    title = "Any Disruption",
+    x = "Age Category",
+    y = "Proportion of individuals",
+    fill = "Time"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text = element_text(size = 10),
+    legend.position = c(0, 1), 
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
+  )
+
+pr3
+```
+
+### Any Disruption By Mobility
+
+```{r}
+pr4 <- summary_by_mobility %>% 
+ggplot(aes(x = mobility, y = proportion, fill = time)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.5) +
+  geom_errorbar(
+    aes(ymin = lower, ymax = upper),
+    position = position_dodge(width = 0.7),
+    width = 0.2,
+    size = 1
+  ) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.26)) +
+  labs(
+    title = "Any Disruption",
+    x = "Mobility",
+    y = "Proportion of individuals",
+    fill = "Time"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text = element_text(size = 10),
+    legend.position = c(0, 1), 
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
+  )
+
+pr4
+```
+
+### Any Disruption by ART duration
+
+```{r}
+
+pr5 <- summary_by_art_duration %>% 
+ggplot(aes(x = art_duration, y = proportion, fill = time)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.5) +
+  geom_errorbar(
+    aes(ymin = lower, ymax = upper),
+    position = position_dodge(width = 0.7),
+    width = 0.2,
+    size = 1
+  ) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.25)) +
+  labs(
+    title = "Any Disruption",
+    x = "ART Duration",
+    y = "Proportion of individuals",
+    fill = "Time"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10),
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text = element_text(size = 10),
+    legend.position = c(0, 1), 
+    legend.justification = c(0, 1),
+    legend.direction = "horizontal"
+  )
+
+pr5
+```
+
+### Combined Plots
+
+#### Age category
+
+```{r}
+#| fig-width: 10
+#| fig-height: 10
+
+### Combined plot
+(pa1 + pa2)/(pa3 + pr3)
+```
+
+### Community type
+
+```{r}
+#| fig-width: 10
+#| fig-height: 10
+
+### Combined plot
+(pc1 + pc2)/(pc2 + pr2)
+```
+
+### Mobility
+
+```{r}
+#| fig-width: 10
+#| fig-height: 10
+
+### Combined plot
+(pm1 + pm2)/(pm3 +pr4)
+```
+
+### ART Duration
+
+```{r}
+#| fig-width: 10
+#| fig-height: 10
+
+### Combined plot
+(pd1 + pd2)/(pd3 + pr5)
+```
+
+### Sex
+
+```{r}
+#| fig-width: 10
+#| fig-height: 10
+
+### Combined plot
+(ps1 + ps2)/(ps3 + pr1)
 ```

@@ -479,16 +479,16 @@ ggplot(df_vl_summary, aes(x = time_point, y = proportion, fill = sex)) +
   )
 df6
 
-df_disrupt <- df6 %>% 
+df_disrupt_1 <- df6 %>% 
   select(-c(copies,new_copies)) %>% 
  # filter(hivac !=8, hivbc!=8,artrunbc!=8,artstrac!=8,artstrbc!=8,artrunac!=8) %>% 
   mutate(across(artrunbc:artstrbc,
        ~ map_dbl(.x, ~ if_else(.x == "No", 0, if_else(.x == "Yes", 1, NA_real_))))) %>% 
   mutate(any_disruption = if_else(rowSums(across(artrunbc:artstrbc),na.rm = TRUE) > 0,1,0))
 
-df_disrupt
+df_disrupt_1
 
-df4 %>% 
+df_disrupt_2 <- df4 %>% 
   select(sex,ageyrs,mobility,art_duration,community_type) %>% 
   mutate(
     age_cat = case_when(
@@ -496,8 +496,12 @@ df4 %>%
       ageyrs >= 30 & ageyrs <= 39 ~  "30-39",
       ageyrs >=40 & ageyrs <= 49 ~ "40-49") %>% 
       fct_relevel("<30") %>% 
-      ff_label("Age group"))
+      ff_label("Age group")) %>% 
+  select(-ageyrs)
   
+
+
+
 
 
   rakai %>% 
@@ -516,19 +520,208 @@ df4 %>%
 
 
 
+df3 %>% 
+  mutate(
+    hivac = if_else(hivac ==1, "Yes","No") %>% 
+      ff_label("Missed scheduled visit for HIV care") %>% 
+      as_factor(),
+    
+    hivbc = if_else(hivbc ==1,"Yes","No") %>% 
+      ff_label("Missed scheduled visit for HIV care") %>% 
+      as_factor(),
+    
+    artrunac = if_else(artrunac ==1,"Yes","No") %>% 
+      as_factor() %>% 
+      ff_label("Run out of ART before next refill"),
+    
+    artrunbc = if_else(artrunbc ==1,"Yes","No") %>% 
+      as_factor() %>% 
+      ff_label("Run out of ART before next refill"),
+    
+    artstrac = if_else(artstrac ==1,"Yes","No") %>% 
+      as_factor() %>% 
+      ff_label("Taken ART pills less frequently / in smaller
+amounts to conserve supply"),
+    
+    artstrbc = if_else(artstrbc ==1,"Yes","No") %>% 
+      as_factor() %>% 
+      ff_label("Taken ART pills less frequently / in smaller
+amounts to conserve supply")
+  )
+
+
+
+ df3 %>% 
+  mutate(
+    hivac = if_else(hivac == "Yes", 1, 0) %>% 
+      ff_label("Missed scheduled visit for HIV care"),
+    
+    hivbc = if_else(hivbc == "Yes", 1, 0) %>% 
+      ff_label("Missed scheduled visit for HIV care"),
+    
+    artrunac = if_else(artrunac == "Yes", 1, 0) %>% 
+      ff_label("Run out of ART before next refill"),
+    
+    artrunbc = if_else(artrunbc == "Yes", 1, 0) %>% 
+      ff_label("Run out of ART before next refill"),
+    
+    artstrac = if_else(artstrac == "Yes", 1, 0) %>% 
+      ff_label("Taken ART pills less frequently / in smaller amounts to conserve supply"),
+    
+    artstrbc = if_else(artstrbc == "Yes", 1, 0) %>% 
+      ff_label("Taken ART pills less frequently / in smaller amounts to conserve supply")
+  )
 
 
 
 
+ rakai %>% 
+   select(ageyrs,sex,mobility,arthoac,artrunac,artstrac,
+    artyrs,comm_num,artrunbc,artstrbc,hivac,hivbc,copies,new_copies) %>% 
+   mutate(
+     age_cat = case_when(
+       ageyrs < 30 ~ "<30",
+       ageyrs >= 30 & ageyrs <= 39 ~  "30-39",
+       ageyrs >=40 & ageyrs <= 49 ~ "40-49") %>% 
+       fct_relevel("<30") %>% 
+       ff_label("Age group"),
+     
+     sex = if_else(sex == "F","Female","Male") %>% 
+       as_factor() %>%
+       fct_relevel("Female") %>% 
+       ff_label("Sex"),
+     
+     mobility = case_when(
+       mobility %in% c(3,8,10) ~ "In-migrant",
+       .default = "Long-term resident") %>% 
+       fct_relevel("In-migrant") %>% 
+       ff_label("Migration"),
+     
+     community_type = case_when(
+       comm_num %in% c(38,770,771,774) ~ "Fishing community",
+       .default = "Inland Community") %>% 
+       fct_relevel("Inland Community") %>% 
+       ff_label("Community type"),
+     fishing_comm = if_else(community_type == "Fishing Community",1,0) %>% 
+       ff_label("Lake Victoria Fishing Community"),
+     
+     art_duration = case_when(
+       artyrs >= 2 &  artyrs <= 5 ~ "2-5 years",
+       artyrs > 5 ~ ">5 years",
+       .default =  "<2 years"
+     ) %>% 
+       fct_relevel("<2 years","2-5 years") %>% 
+       ff_label("Time on ART"),
+     
+     hivac = if_else(hivac == "Yes", 1, 0) %>% 
+       ff_label("Missed scheduled visit for HIV care"),
+     
+     hivbc = if_else(hivbc == "Yes", 1, 0) %>% 
+       ff_label("Missed scheduled visit for HIV care"),
+     
+     artrunac = if_else(artrunac == "Yes", 1, 0) %>% 
+       ff_label("Run out of ART before next refill"),
+     
+     artrunbc = if_else(artrunbc == "Yes", 1, 0) %>% 
+       ff_label("Run out of ART before next refill"),
+     
+     artstrac = if_else(artstrac == "Yes", 1, 0) %>% 
+       ff_label("Taken ART pills less frequently / in smaller amounts to conserve supply"),
+     
+     artstrbc = if_else(artstrbc == "Yes", 1, 0) %>% 
+       ff_label("Taken ART pills less frequently / in smaller amounts to conserve supply"),
+     
+     
+     
+    )
 
 
 
-
-
-
-
-
-
+ library(dplyr)
+ library(ggplot2)
+ 
+ # Helper function to calculate proportions and confidence intervals
+ prepare_data <- function(data, group_var) {
+   data %>%
+     group_by({{ group_var }}) %>%
+     summarise(
+       n_b4 = sum(any_disruption_b4, na.rm = TRUE),
+       total_b4 = n(),
+       n_after = sum(any_disruption_after, na.rm = TRUE),
+       total_after = n(),
+       .groups = "drop"
+     ) %>%
+     mutate(
+       proportion_b4 = n_b4 / total_b4,
+       proportion_after = n_after / total_after,
+       se_b4 = sqrt(proportion_b4 * (1 - proportion_b4) / total_b4),
+       se_after = sqrt(proportion_after * (1 - proportion_after) / total_after),
+       lower_b4 = proportion_b4 - 1.96 * se_b4,
+       upper_b4 = proportion_b4 + 1.96 * se_b4,
+       lower_after = proportion_after - 1.96 * se_after,
+       upper_after = proportion_after + 1.96 * se_after
+     ) %>%
+     pivot_longer(
+       cols = starts_with("proportion"),
+       names_to = "time",
+       values_to = "proportion"
+     ) %>%
+     mutate(
+       time = if_else(time == "proportion_b4", "Before Covid-19", "After Covid-19"),
+       lower = if_else(time == "Before Covid-19", lower_b4, lower_after),
+       upper = if_else(time == "Before Covid-19", upper_b4, upper_after)
+     ) %>%
+     select({{ group_var }}, time, proportion, lower, upper)
+ }
+ 
+ # Prepare data for each grouping variable
+ summary_by_sex <- prepare_data(df_disruption, sex)
+ summary_by_age <- prepare_data(df_disruption, age_cat)
+ summary_by_mobility <- prepare_data(df_disruption, mobility)
+ summary_by_community <- prepare_data(df_disruption, community_type)
+ 
+ 
+ plot_disruption <- function(data, x_var, title) {
+   ggplot(data, aes(x = {{ x_var }}, y = proportion, fill = time)) +
+     geom_col(position = position_dodge(width = 0.7), width = 0.5) +
+     geom_errorbar(
+       aes(ymin = lower, ymax = upper),
+       position = position_dodge(width = 0.7),
+       width = 0.2,
+       size = 1
+     ) +
+     scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.30)) +
+     labs(
+       title = title,
+       x = as.character(substitute(x_var)),
+       y = "Proportion of Individuals",
+       fill = "Time"
+     ) +
+     theme_minimal() +
+     theme(
+       plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+       axis.title.x = element_text(face = "bold", size = 12),
+       axis.title.y = element_text(face = "bold", size = 12),
+       legend.title = element_text(face = "bold", size = 12),
+       legend.text = element_text(size = 10),
+       legend.position = c(0, 1), 
+       legend.justification = c(0, 1),
+       legend.direction = "horizontal"
+     )
+ }
+ 
+ # Plot for disruption by sex
+ plot_disruption(summary_by_sex, sex, "Any Disruption by Sex")
+ 
+ # Plot for disruption by age category
+ plot_disruption(summary_by_age, age_cat, "Any Disruption by Age Category")
+ 
+ # Plot for disruption by mobility
+ plot_disruption(summary_by_mobility, mobility, "Any Disruption by Mobility")
+ 
+ # Plot for disruption by community type
+ plot_disruption(summary_by_community, community_type, "Any Disruption by Community Type")
+ 
 
 
 
