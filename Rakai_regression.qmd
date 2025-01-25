@@ -4,7 +4,7 @@ author: "Asabere Asante"
 df-print: kable
 code-overflow: wrap
 execute:
-  echo: true
+  echo: false
   warning: false
   message: false
 format: 
@@ -19,10 +19,14 @@ editor_options:
 ---
 
 ```{r}
+ library(MASS)
 library(tidyverse)
 library(finalfit)
 library(gtsummary)
 library(patchwork)
+#library(conflicted)
+library(gt)
+#conflict_prefer("select", "dplyr")
 ```
 
 ```{r}
@@ -2772,3 +2776,188 @@ pr5
 ### Combined plot
 (ps1 + ps2)/(ps3 + pr1)
 ```
+
+### VIRAEMIA PREVALENCE
+
+```{r}
+df_rakai_reg <- rakai %>% 
+  select(ageyrs,sex,mobility,arthoac,artrunac,artstrac,
+         artyrs,comm_num,artrunbc,artstrbc,hivac,hivbc,copies,new_copies) %>% 
+  filter(copies != "INV.IC ",!is.na(copies),!is.na(new_copies)) %>% 
+  
+  mutate(
+    copies = str_remove_all(copies, "<\\s*"),
+    copies = if_else(copies == "BD", "0", copies),
+    copies = as.numeric(copies),
+    
+    new_copies = str_remove_all(new_copies, "<\\s*"),
+    new_copies = if_else(new_copies == "BD", "0", new_copies),
+    new_copies = as.numeric(new_copies)
+  ) %>% 
+  mutate(viral_load_b4 = if_else(copies < 200, "Viral Load Sppression","Viraemia") %>% 
+           ff_label("HIV RNA viral load, in copies/ml"),
+         viral_load_after = if_else(new_copies < 200,"Viral Load Sppression","Viraemia") %>% 
+           ff_label("HIV RNA viral load, in copies/ml")) %>% 
+  mutate(
+    suppbc = if_else(viral_load_b4 == "Viral Load Suppression", 1, 0),
+    suppac = if_else(viral_load_after == "Viral Load Suppression", 1, 0)
+  ) %>% 
+ mutate(
+    
+    age_cat = case_when(
+      ageyrs < 30 ~ "<30",
+      ageyrs >= 30 & ageyrs <= 39 ~  "30-39",
+      ageyrs >=40 & ageyrs <= 49 ~ "40-49") %>% 
+      fct_relevel("<30") %>% 
+      ff_label("Age group"),
+    
+    sex = if_else(sex == "F","Female","Male") %>% 
+      as_factor() %>%
+      fct_relevel("Female") %>% 
+      ff_label("Sex"),
+    
+    mobility = case_when(
+      mobility %in% c(3,8,10) ~ "In-migrant",
+      .default = "Long-term resident") %>% 
+      fct_relevel("In-migrant") %>% 
+      ff_label("Migration"),
+    
+    community_type = case_when(
+      comm_num %in% c(38,770,771,774) ~ "Fishing community",
+      .default = "Inland Community") %>% 
+      fct_relevel("Inland Community") %>% 
+      ff_label("Community type"),
+    fishing_comm = if_else(community_type == "Fishing Community",1,0) %>% 
+      ff_label("Lake Victoria Fishing Community"),
+    
+    art_duration = case_when(
+      artyrs >= 2 &  artyrs <= 5 ~ "2-5 years",
+      artyrs > 5 ~ ">5 years",
+      .default =  "<2 years"
+    ) %>% 
+      fct_relevel("<2 years","2-5 years") %>% 
+      ff_label("Time on ART"),
+    
+    hivac = if_else(hivac == 1, 1, 0) %>% 
+      ff_label("Missed scheduled Visit"),
+    
+    hivbc = if_else(hivbc == 1, 1, 0) %>% 
+      ff_label("Missed Scheduled Visit"),
+    
+    artrunac = if_else(artrunac == 1, 1, 0) %>% 
+      ff_label("Run out of ARTl"),
+    
+    artrunbc = if_else(artrunbc == 1, 1, 0) %>% 
+      ff_label("Run out of ART"),
+    
+    artstrac = if_else(artstrac == 1, 1, 0) %>% 
+      ff_label("Reduced ART Intake"),
+    
+    artstrbc = if_else(artstrbc == 1, 1, 0) %>% 
+      ff_label("Reduced ART Intake"),
+    
+  ) 
+
+```
+
+```{r}
+df_viraemia <-   df_rakai_reg %>% 
+    select(sex,age_cat,mobility,community_type,art_duration,
+           hivbc,artrunbc,artstrbc,hivac,artrunac,artstrac,viral_load_b4,
+           viral_load_after,suppbc,suppac) %>% 
+   mutate(any_disruption_b4 = if_else(rowSums(across(hivbc:artrunbc),na.rm = TRUE) > 0,1,0) %>% 
+            ff_label("Any ART Disruption"),
+  any_disruption_after = if_else(rowSums(across(hivac:artstrac),na.rm = TRUE) > 0,1,0)%>% 
+  ff_label("Any ART Disruption")) 
+```
+
+```{r}
+df_viraemia <-  df_viraemia %>% 
+  mutate(
+    viraemia_after_covid = if_else(viral_load_after == "Viraemia","Yes","No") %>% 
+      fct_relevel("No") %>% 
+      ff_label("Viraemia"),
+    viraemia_after_dum = if_else(viral_load_after == "Viraemia",1,0) %>% 
+      ff_label("Viraemia"),
+    
+    viraemia_b4_covid = if_else(viral_load_b4 == "Viraemia","Yes","No") %>% 
+      fct_relevel("No") %>% 
+      ff_label("Viraemia"),
+    viraemia_b4_dum = if_else(viral_load_b4 == "Viraemia",1,0) %>% 
+      ff_label("Viraemia"),
+     art_disruption_b4 = if_else(any_disruption_b4 == 1,"Yes","No") %>% 
+      fct_relevel("No") %>% 
+      ff_label("Any ART Disruption pre-covid"),
+    
+    art_disruption_after = if_else(any_disruption_after == 1,"Yes","No") %>% 
+      fct_relevel("No") %>% 
+      ff_label("Any ART Disruption post-covid")
+  )
+  
+```
+
+```{r}
+prr_table_full <- df_viraemia %>% 
+  select(art_disruption_b4,sex,age_cat,mobility,community_type,
+         art_duration,viraemia_after_covid,art_disruption_after) %>% 
+  
+  tbl_summary(
+  by = viraemia_after_covid,
+  percent = "row",
+  include = c(art_disruption_after,art_disruption_b4,sex,age_cat,mobility,community_type,
+              art_duration,viraemia_after_covid)
+) %>% 
+modify_spanning_header(
+  all_stat_cols() ~ "**Viraemia After COVID**" # Add a header for the `by` variable
+)
+
+prr_table_full
+```
+
+```{r}
+tbl_ureg <- df_viraemia %>% 
+  select(art_disruption_after,sex,age_cat,mobility,community_type,
+         art_duration,viraemia_after_dum,art_disruption_b4) %>% 
+tbl_uvregression(
+  method = glm.nb,
+  y = viraemia_after_dum,
+ # x = everything(),
+  method.args = list(), 
+  exponentiate = TRUE
+)
+
+tbl_ureg <- tbl_ureg %>%
+  modify_column_hide(columns = c("N", "p.value","N_obs"))
+
+tbl_ureg
+
+
+
+tbl_combined <- tbl_merge(
+  tbls = list(prr_table_full, tbl_ureg), # Tables to combine
+  tab_spanner = c("**Viraemia After COVID**", "**Prevalence Risk Ratios**") # Headers for each table
+) 
+# Display the combined table
+tbl_combined
+
+```
+
+|  |  |  |  |  |
+|----|----|----|----|----|
+|  | **Viraemia Post Covid-19 (n, %)** |  |  |  |
+| **Characteristic** | **No (N = 2,650)** | **Yes (N = 135)** | **PRR** | **95% CI** |
+| Any ART Disruption post-covid | 347 (93%) | 28 (7.5%) | 1.68 | (1.09, 2.51) |
+| Any ART Disruption pre-covid | 115 (91%) | 11 (8.7%) | 1.87 | (0.95, 3.31) |
+| **Sex** |  |  |  |  |
+| Female | 1,714 (96%) | 66 (3.7%) | \_\_ | \_\_ |
+| Male | 936 (93%) | 69 (6.9%) | 1.85 | (1.32, 2.60) |
+| **Age group** |  |  |  |  |
+| \<30 | 390 (90%) | 44 (10%) | \_\_ | \_\_ |
+| 30-39 | 1,136 (94%) | 67 (5.6%) | 0.55 | (0.38, 0.81) |
+| 40-49 | 1,124 (98%) | 24 (2.1%) | 0.21 | (0.12, 0.34) |
+| **Migration** |  |  |  |  |
+| In-migrant | 596 (95%) | 34 (5.4%) | \_\_ | \_\_ |
+| Long-term resident | 2,054 (95%) | 101 (4.7%) | 0.87 | (0.60, 1.30) |
+| **Community type** |  |  |  |  |
+| Inland Community | 1,212 (96%) | 48 (3.8%) | \_\_ | \_\_ |
+| Fishing community | 87 (5.7%) | 1438 (94.3%) | 1.50 | (1.06, 2.15) |
