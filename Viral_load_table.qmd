@@ -4,12 +4,11 @@ author: "Asabere Asante"
 df-print: kable
 code-overflow: wrap
 execute:
-  echo: false
+  echo: true
   warning: false
   message: false
 format: 
   html:
-    embed-resources: true
     fig-width: 8
     fig-height: 6
     dpi: 300
@@ -205,7 +204,7 @@ tbl_combined
 ```
 
 |  |  |  |  |  |
-|---------------|---------------|---------------|---------------|---------------|
+|----|----|----|----|----|
 |  | **Viraemia Post Covid-19 (n, %)** |  |  |  |
 | **Characteristic** | **No (N = 2,650)** | **Yes (N = 135)** | **PRR** | **95% CI** |
 | Any ART Disruption post-covid | 347 (93%) | 28 (7.5%) | 1.68 | (1.09, 2.51) |
@@ -316,4 +315,60 @@ reg_tbl_combined
 
 # tbl_ureg$table_body <- tbl_ureg$table_body %>%
  #  select(-N_obs)
+```
+
+```{r}
+model_nb_sex <- df_viraemia %>%
+  group_by(sex) %>% 
+  nest() %>% 
+  mutate(
+    model = map(data, ~ glm.nb(viraemia_after_dum ~ any_disruption_after + any_disruption_b4 + 
+                                 age_cat + mobility + community_type + art_duration, 
+                               data = .x)),
+    results = map(model, tidy) ,
+    ci = map(model, ~ confint(.x) %>% as_tibble()),
+    ci = map(ci, ~ .x %>%
+                    rename(ci.lower = `2.5 %`, ci.upper = `97.5 %`))
+  )
+```
+
+```{r}
+model_nb_sex %>% select(sex, results,ci)
+```
+
+```{r}
+model_nb_sex %>% unnest(results,ci)
+```
+
+```{r}
+model_nb_sex %>% select(sex, results) %>% unnest(results)
+model_nb_sex %>% select(sex,ci) %>% unnest(ci)
+```
+
+```{r}
+model_nb_sex %>% select(sex, results,ci) %>% unnest(c(results,ci)) 
+```
+
+```{r}
+nb_model_male <- model_nb_sex %>% select(sex, results,ci) %>% unnest(c(results,ci)) %>% 
+  filter(sex == "Male")
+
+
+nb_model_female <- model_nb_sex %>% select(sex, results,ci) %>% unnest(c(results,ci)) %>% 
+  filter(sex == "Female")
+```
+
+```{r}
+nb_model_female
+nb_model_male
+```
+
+```{r}
+nb_model_female %>% 
+  select(term,estimate,ci.lower,ci.upper)
+```
+
+```{r}
+nb_model_male %>% 
+  select(term,estimate,ci.lower,ci.upper)
 ```

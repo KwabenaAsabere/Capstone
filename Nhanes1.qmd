@@ -1,0 +1,44 @@
+---
+title: "NHANES"
+author: "K.Asabere"
+df-print: kable
+code-overflow: wrap
+execute: 
+  echo: true
+  warning: false
+  message: false
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(tidymodels)
+library(haven)
+library(finalfit)
+library(gtsummary)
+library(janitor)
+```
+
+```{r}
+nhanes_demo <- read_xpt("DEMO_J (1).xpt")
+head(nhanes_demo)
+```
+
+```{r}
+nhanes_bp <- read_xpt("BPX_J (1).xpt")
+head(nhanes_bp)
+```
+
+```{r}
+# Select relevant variables from demography dataframe
+nhanes_demo_main <- nhanes_demo %>%
+  select(RIDAGEYR,  # Age in years
+         RIAGENDR,  # Sex
+         RIDRETH1,  # Race/Ethnicity
+         INDFMPIR,  # Family income to poverty ratio
+         HIQ011)    # Health insurance status
+```

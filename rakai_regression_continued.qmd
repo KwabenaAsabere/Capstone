@@ -1,0 +1,417 @@
+---
+title: "RAKAI REGRESSION UPDATES"
+df-print: kable
+code-overflow: wrap
+execute: 
+  echo: true
+  warning: false
+  message: false
+author: "K.Asabere"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(broom)
+library(finalfit)
+library(conflicted)
+library(gtsummary)
+library(gt)
+library(flextable)
+conflict_prefer("select", "dplyr")
+conflict_prefer("filter", "dplyr")
+```
+
+### Combined Forest Plot of Univariable and Multivariable Regressions with Viraemia after Covid as Outcome
+
+```{r}
+df_viraemia <- read_rds("df_viraemia.rds") %>% 
+  drop_na()
+
+# missing_glimpse(df_viraemia)
+# ff_glimpse(df_viraemia)
+
+```
+
+Multivariate negative binomial regression with viraemia after covid as outcome and summarise the prevalence ratios and confidence intervals into a table.
+
+```{r}
+model_viraemia_multivariate <-df_viraemia %>%
+glm.nb(viraemia_after_dum ~ any_disruption_after + any_disruption_b4 + sex +
+age_cat+ mobility+community_type + art_duration, data = .)
+
+
+viraemia_multivariate_df <- model_viraemia_multivariate  %>% 
+  tidy(exponentiate = TRUE,conf.int = TRUE) %>% 
+  mutate(model = "Adjusted") %>% 
+  select(term,model,estimate,conf.low,conf.high) %>% 
+mutate(across(where(is.numeric), \(x) round(x, 2)))  %>% 
+     dplyr:: filter(term != "(Intercept)")
+
+viraemia_multivariate_df
+
+```
+
+Univariate negative binomial regression with viraemia after covid as outcome and summarise the prevalence ratios and confidence intervals into a table.
+
+```{r}
+
+explanatory_vars <-  c("any_disruption_after","any_disruption_b4","sex","age_cat","mobility","community_type","art_duration")
+
+dependent_var <- "viraemia_after_dum"
+
+viraemia_univariate_df <- explanatory_vars %>% 
+  str_c("viraemia_after_dum ~ ", .) %>% 
+  map(
+    .f = ~glm.nb(
+      formula = as.formula(.x),
+      data = df_viraemia) 
+  ) %>% 
+  map(
+    .f = ~tidy(.x, exponentiate = TRUE, conf.int = TRUE)
+  ) %>% 
+  bind_rows() %>% 
+  mutate(across(where(is.numeric), \(x) round(x,2)),
+         model = "Unadjusted") %>% 
+  filter(term != "(Intercept)") %>% 
+  select(term,model,estimate,conf.low,conf.high)
+
+viraemia_univariate_df
+```
+
+```{r}
+# combine univariate and multivariate model dataframes into one dataframe
+
+viraemia_forest_df <- bind_rows(viraemia_univariate_df,viraemia_multivariate_df)%>% mutate(term = case_when(
+       term == "any_disruption_after" ~ "ART Disruption After (Yes)",
+       term == "any_disruption_b4" ~ "ART Disruption Before (Yes)",
+       term == "sexMale" ~ "Sex (Male vs Female)",
+       term == "age_cat<30" ~ "Age: <30 vs 40-49",
+       term == "age_cat30-39" ~ "Age: 30-39 vs 40-49",
+       term == "mobilityLong-term resident" ~ "Mobility (Long-term Resident)",
+       term == "community_typeFishing community" ~ "Community Type (Fishing)",
+       term == "art_duration2-5 years" ~ "ART Duration: 2-5 years",
+       term == "art_duration>5 years" ~ "ART Duration: >5 years",
+       term == "viraemia_b4_dum" ~ "Viraemia before Covid",
+       TRUE ~ term
+     )) %>%
+     arrange(desc(estimate))
+
+viraemia_forest_df
+
+```
+
+```{r}
+
+ ggplot(viraemia_forest_df, aes(x = term, y = estimate, color = model)) +
+     geom_point(position = position_dodge(width = 0.5), size = 2) + 
+     geom_errorbar(aes(ymin = conf.low, ymax = conf.high), 
+                   position = position_dodge(width = 0.5), width = 0.2) + 
+     geom_hline(yintercept = 1, linetype = "dashed", color = "black") +  
+     coord_flip() +  # Flip coordinates for better readability
+     scale_color_manual(values = c("Unadjusted" = "blue", "Adjusted" = "red")) +
+     labs(title = "Forest Plot of Prevalence Ratios",
+          x = "Variables",
+          y = "Prevalence Ratio (95% CI)",
+          color = "Model Type") + 
+     theme_minimal(base_size = 14)  
+   
+```
+
+### Stratification by Sex
+
+```{r}
+model_viraemia_sex <- df_viraemia %>%
+     group_by(sex) %>%
+     nest() %>%
+     mutate(
+       model = map(data, ~ glm.nb(viraemia_after_dum ~ any_disruption_after + 
+                                    any_disruption_b4 + age_cat + mobility + 
+                                    community_type + art_duration, 
+                                  data = .x)), 
+       results = map(model, ~ tidy(.x, exponentiate = TRUE, conf.int = TRUE)) 
+     ) %>%
+     unnest(cols = results) %>%  
+     select(sex, term, estimate, conf.low, conf.high) %>%  
+     mutate(across(where(is.numeric), \(x) round(x, 2)))  %>% 
+     dplyr:: filter(term != "(Intercept)") 
+
+
+```
+
+```{r}
+
+sex_forest_df <- model_viraemia_sex %>%  
+    mutate(term = case_when(
+      term == "any_disruption_after" ~ "ART Disruption After (Yes)",
+      term == "any_disruption_b4" ~ "ART Disruption Before (Yes)",
+      term == "sexMale" ~ "Sex (Male vs Female)",
+      term == "age_cat<30" ~ "Age: <30 vs 40-49",
+      term == "age_cat30-39" ~ "Age: 30-39 vs 40-49",
+      term == "mobilityLong-term resident" ~ "Mobility (Long-term Resident)",
+      term == "community_typeFishing community" ~ "Community Type (Fishing)",
+      term == "art_duration2-5 years" ~ "ART Duration: 2-5 years",
+      term == "art_duration>5 years" ~ "ART Duration: >5 years",
+      term == "viraemia_b4_dum" ~ "Viraemia before Covid",
+      TRUE ~ term
+    )) %>%
+    arrange(desc(estimate))
+  
+sex_forest_df
+```
+
+```{r}
+
+ggplot(sex_forest_df, aes(x = term, y = estimate, color = sex)) +
+  geom_point(position = position_dodge(width = 0.5), size = 3) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), 
+                position = position_dodge(width = 0.5), width = 0.2) + 
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black") +  
+  coord_flip() +  
+  labs(
+    title = "Prevalence Ratios by Sex",
+    x = "Variables",
+    y = "Prevalence Ratio of Viraemia after Covid-19 By Sex"
+  ) +
+  theme_minimal(base_size = 12) +  
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),  
+    axis.text = element_text(face = "bold", size = 10),   
+    axis.title = element_text(face = "bold", size = 10),  
+    legend.text = element_text(face = "bold", size = 10),  
+    legend.title = element_text(face = "bold", size = 10) 
+  )
+
+```
+
+### Univariable and Multivariable Regressions with ART Disruption as Outcome
+
+Multivariate negative binomial regression with any ART disruption after covid as outcome and summarise the prevalence ratios and confidence intervals into a table.
+
+```{r}
+model_disruption_multivariate <- df_viraemia %>% 
+  glm.nb(any_disruption_after ~ any_disruption_b4 + sex +
+           age_cat+ mobility+community_type + art_duration + viraemia_b4_dum, data = .)  
+  
+disruption_multivariate_df <- model_disruption_multivariate %>% 
+  tidy(exponentiate = TRUE,conf.int = TRUE) %>% 
+  mutate(model = "Adjusted") %>% 
+  select(term,model,estimate,conf.low,conf.high) %>% 
+mutate(across(where(is.numeric), \(x) round(x, 2)))  %>% 
+     dplyr:: filter(term != "(Intercept)")
+  
+  
+
+disruption_multivariate_df
+```
+
+Univariate negative binomial regression with any ART disruption after covid as outcome and summarise the prevalence ratios and confidence intervals into a table.
+
+```{r}
+explanatory_vars <-  c("any_disruption_b4","sex","age_cat","mobility","community_type","art_duration","viraemia_b4_dum")
+
+dependent_var <- "art_disruption_after"
+
+
+```
+
+```{r}
+disruption_univariate_df <-  explanatory_vars %>% 
+  str_c("any_disruption_after ~ ", .) %>% 
+  map(
+    .f = ~glm.nb(
+      formula = as.formula(.x),
+      data = df_viraemia) 
+  ) %>% 
+  map(
+    .f = ~tidy(.x, exponentiate = TRUE, conf.int = TRUE)
+  ) %>% 
+  bind_rows() %>% 
+ mutate(across(where(is.numeric), \(x) round(x,2)),
+         model = "Unadjusted") %>% 
+  filter(term != "(Intercept)") %>% 
+  select(term,model,estimate,conf.low,conf.high)
+
+disruption_univariate_df
+```
+
+```{r}
+
+disruption_forest_df <- bind_rows(disruption_univariate_df,disruption_multivariate_df)%>% 
+  mutate(term = case_when(
+       term == "any_disruption_after" ~ "ART Disruption After (Yes)",
+       term == "any_disruption_b4" ~ "ART Disruption Before (Yes)",
+       term == "sexMale" ~ "Sex (Male vs Female)",
+       term == "age_cat<30" ~ "Age: <30 vs 40-49",
+       term == "age_cat30-39" ~ "Age: 30-39 vs 40-49",
+       term == "mobilityLong-term resident" ~ "Mobility (Long-term Resident)",
+       term == "community_typeFishing community" ~ "Community Type (Fishing)",
+       term == "art_duration2-5 years" ~ "ART Duration: 2-5 years",
+       term == "art_duration>5 years" ~ "ART Duration: >5 years",
+       term == "viraemia_b4_dum" ~ "Viraemia before Covid",
+       TRUE ~ term
+     )) %>%
+     arrange(desc(estimate))
+
+disruption_forest_df
+
+```
+
+```{r}
+ggplot(disruption_forest_df, aes(x = term, y = estimate, color = model)) +
+      geom_point(position = position_dodge(width = 0.5), size = 2) + 
+      geom_errorbar(aes(ymin = conf.low, ymax = conf.high), 
+                    position = position_dodge(width = 0.5), width = 0.2) + 
+      geom_hline(yintercept = 1, linetype = "dashed", color = "black") +  
+      coord_flip() +  
+      scale_color_manual(values = c("Unadjusted" = "blue", "Adjusted" = "red")) +
+      labs(
+        # title = "Forest Plot of Prevalence Ratios",
+        x = " ",
+        y = "Prevalence Risk Ratio of Any ART Disruption after Covid-19",
+        color = " "
+      ) + 
+      theme_minimal(base_size = 10) +
+      theme(
+        legend.position = "bottom",
+        axis.text = element_text(face = "bold", size = 10),   
+        axis.title = element_text(face = "bold", size = 10),   
+        legend.text = element_text(face = "bold", size = 10), 
+        legend.title = element_text(face = "bold", size = 10) 
+      )
+```
+
+### Forest plots
+
+#### Prevalence Risk Ratio of Viraemia after Covid-19
+
+```{r}
+
+
+    ggplot(viraemia_forest_df, aes(x = term, y = estimate, color = model)) +
+      geom_point(position = position_dodge(width = 0.5), size = 2) + 
+      geom_errorbar(aes(ymin = conf.low, ymax = conf.high), 
+                    position = position_dodge(width = 0.5), width = 0.2) + 
+      geom_hline(yintercept = 1, linetype = "dashed", color = "black") +  
+      coord_flip() +  
+      scale_y_continuous(breaks = c(1:max(viraemia_forest_df$conf.high + 1)),  
+                         limits = c(0, max(viraemia_forest_df$conf.high) + 2))+
+      scale_color_manual(values = c("Unadjusted" = "blue", "Adjusted" = "red")) +
+      labs(
+        # title = "Forest Plot of Prevalence Ratios",
+        x = " ",
+        y = "Prevalence Risk Ratio of Viraemia after Covid-19",
+        color = " "
+      ) + 
+      theme_minimal(base_size = 10) +
+      theme(
+        legend.position = "bottom",
+        axis.text = element_text(face = "bold", size = 10),   
+        axis.title = element_text(face = "bold", size = 10),   
+        legend.text = element_text(face = "bold", size = 10), 
+        legend.title = element_text(face = "bold", size = 10) 
+      )
+```
+
+#### Prevalence Risk Ratio of Any ART Disruption After Covid-19
+
+```{r}
+ggplot(disruption_forest_df, aes(x = term, y = estimate, color = model)) +
+      geom_point(position = position_dodge(width = 0.5), size = 2) + 
+      geom_errorbar(aes(ymin = conf.low, ymax = conf.high), 
+                    position = position_dodge(width = 0.5), width = 0.2) + 
+      geom_hline(yintercept = 1, linetype = "dashed", color = "black") +  
+      coord_flip() +  
+      scale_y_continuous(breaks = c(1:max(disruption_forest_df$conf.high + 1)),  
+                         limits = c(0, max(disruption_forest_df$conf.high) + 2))+
+      scale_color_manual(values = c("Unadjusted" = "blue", "Adjusted" = "red")) +
+      labs(
+        # title = "Forest Plot of Prevalence Ratios",
+        x = " ",
+        y = "Prevalence Risk Ratio of Any ART Disruption after Covid-19",
+        color = " "
+      ) + 
+      theme_minimal(base_size = 10) +
+      theme(
+        legend.position = "bottom",
+        axis.text = element_text(face = "bold", size = 10),   
+        axis.title = element_text(face = "bold", size = 10),   
+        legend.text = element_text(face = "bold", size = 10), 
+        legend.title = element_text(face = "bold", size = 10) 
+      )
+```
+
+#### Prevalence Risk Ratio of Viraemia after Covid-19 By Sex
+
+```{r}
+ ggplot(sex_forest_df, aes(x = term, y = estimate, color = sex)) +
+      geom_point(position = position_dodge(width = 0.5), size = 3) +  
+      geom_errorbar(aes(ymin = conf.low, ymax = conf.high), 
+                    position = position_dodge(width = 0.5), width = 0.2) +  
+      geom_hline(yintercept = 1, linetype = "dashed", color = "black") + 
+      coord_flip() +  
+      scale_y_continuous(breaks = c(1:max(sex_forest_df$conf.high)),  
+                         limits = c(0, max(sex_forest_df$conf.high) + 1)) +  
+      labs(
+       #title = "Prevalence Ratios by Sex",
+        x = "",
+        y = "Prevalence Risk Ratio of Viraemia after Covid-19 By Sex",
+        color = ""
+      ) +
+      theme_minimal(base_size = 10) +  
+      theme(
+         legend.position = "bottom",
+        plot.title = element_text(face = "bold", size = 14, hjust = 0.5),  
+        axis.text = element_text(face = "bold", size = 10),    
+        axis.title = element_text(face = "bold", size = 10),   
+        legend.text = element_text(face = "bold", size = 10),  
+        legend.title = element_text(face = "bold", size = 10)  
+      )
+    
+```
+
+## Regression Tables
+
+#### Any ART Disruption Post-Covid
+
+![](images/disruption_final_table_image-01.png)
+
+#### Viraemia Post-Covid
+
+![](images/VIRAEMIA_TABLE_IMAGE.png)
+
+### Viraemia Sex Stratification
+
+```{r}
+sex_viraemia_table <- sex_forest_df %>%
+  arrange(term, sex) %>%  
+  mutate(
+    PRR_CI = paste0(estimate, " (", conf.low, " - ", conf.high, ")")  
+  ) %>%
+  select(term, sex, PRR_CI) %>%  
+  pivot_wider(names_from = sex, values_from = PRR_CI)  
+
+sex_viraemia_table %>%
+  gt() %>%
+  tab_header(
+    title = "Prevalence Risk Ratios by Sex",
+    #subtitle = "Comparison of Univariate Negative Binomial Models"
+  ) %>%
+  cols_label(
+    term = "Variable",
+    Female = "Female PRR (95% CI)",
+    Male = "Male PRR (95% CI)"
+  ) %>%
+  tab_options(table.font.names = "Times New Roman") %>%
+  fmt_number(columns = 2:3, decimals = 2) %>%
+  opt_table_lines()
+
+sex_viraemia_table
+
+```
+
+![](images/clipboard-3581636876.png)

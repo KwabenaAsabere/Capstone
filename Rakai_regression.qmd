@@ -4,7 +4,7 @@ author: "Asabere Asante"
 df-print: kable
 code-overflow: wrap
 execute:
-  echo: false
+  echo: true
   warning: false
   message: false
 format: 
@@ -24,6 +24,7 @@ library(tidyverse)
 library(finalfit)
 library(gtsummary)
 library(patchwork)
+library(broom)
 #library(conflicted)
 library(gt)
 #conflict_prefer("select", "dplyr")
@@ -130,6 +131,8 @@ df3 <- df1 %>%
          
   )
 
+# saveRDS(df3, file = "rakai_cleaned.rds")
+
 ```
 
 ```{r}
@@ -138,6 +141,7 @@ df4 <- df3 %>%
     ageyrs,age_cat,sex,current_marital_status,education_level,primary_occupation,
     mobility,community_type,art_duration
   )
+
 ```
 
 ### **Table One**
@@ -159,7 +163,7 @@ df4 %>%
    bold_labels() %>%
   italicize_levels() %>%
   modify_spanning_header(
-    update = all_stat_cols() ~ "**Sex**"
+     all_stat_cols() ~ "**Sex**"
   ) 
 ```
 
@@ -224,6 +228,8 @@ df7 <- df6 %>% filter(copies != "INV.IC ",!is.na(copies),!is.na(new_copies)) %>%
            ff_label("HIV RNA viral load, in copies/ml"),
          viral_load_after = if_else(new_copies < 200,"Viral Load Sppression","Viraemia") %>% 
            ff_label("HIV RNA viral load, in copies/ml"))
+
+
 ```
 
 ```{r}
@@ -241,6 +247,8 @@ df_vl_supp  <- df7 %>%
   mutate(
     time = if_else(grepl("b4$", variable), "Before Covid-19", "After Covid-19"),
   )
+
+
   
   
 df_vl_summary <- df_vl_supp %>% filter(!is.na(viral_load)) %>% 
@@ -729,10 +737,12 @@ amounts to conserve supply")
   ) %>% 
   select(-comm_num)
 
+
+
 ```
 
 ```{r}
-# df_com
+ # df_com
 ```
 
 ### Reduced ART intake by Community
@@ -1141,6 +1151,8 @@ amounts to conserve supply"),
     ff_label("Taken ART pills less frequently / in smaller
 amounts to conserve supply")
   )
+
+
 ```
 
 ### Run Out of ART by mobility
@@ -1545,6 +1557,8 @@ amounts to conserve supply"),
 amounts to conserve supply")
   ) %>% 
   select(-ageyrs)
+
+
 ```
 
 ```{r}
@@ -1961,6 +1975,8 @@ amounts to conserve supply"),
 amounts to conserve supply")
   ) %>% 
   select(-artyrs)
+
+
 
 ```
 
@@ -2416,6 +2432,7 @@ df_disruption <-  df_disruption %>%
 df_disruption <-  df_disruption %>% 
 mutate(any_disruption_b4 = if_else(rowSums(across(hivbc:artrunbc),na.rm = TRUE) > 0,1,0),
 any_disruption_after = if_else(rowSums(across(hivac:artstrac),na.rm = TRUE) > 0,1,0))
+
 ```
 
 ```{r}
@@ -2808,7 +2825,7 @@ df_rakai_reg <- rakai %>%
       ageyrs < 30 ~ "<30",
       ageyrs >= 30 & ageyrs <= 39 ~  "30-39",
       ageyrs >=40 & ageyrs <= 49 ~ "40-49") %>% 
-      fct_relevel("<30") %>% 
+      fct_relevel("40-49") %>% 
       ff_label("Age group"),
     
     sex = if_else(sex == "F","Female","Male") %>% 
@@ -2858,6 +2875,12 @@ df_rakai_reg <- rakai %>%
     
   ) 
 
+
+
+df_rakai_reg2 <- df_rakai_reg %>% 
+  mutate(age_cat = age_cat %>% 
+           fct_relevel("<30"))
+
 ```
 
 ```{r}
@@ -2893,25 +2916,32 @@ df_viraemia <-  df_viraemia %>%
       fct_relevel("No") %>% 
       ff_label("Any ART Disruption post-covid")
   )
-  
+
+ # saveRDS(df_viraemia, file = "df_viraemia.rds")
 ```
 
 ```{r}
 prr_table_full <- df_viraemia %>% 
   select(art_disruption_b4,sex,age_cat,mobility,community_type,
          art_duration,viraemia_after_covid,art_disruption_after) %>% 
+  mutate(age_cat = age_cat %>% 
+           fct_relevel("<30"))
   
+tbl_summary_obj <- prr_table_full %>% 
   tbl_summary(
   by = viraemia_after_covid,
   percent = "row",
-  include = c(art_disruption_after,art_disruption_b4,sex,age_cat,mobility,community_type,
-              art_duration,viraemia_after_covid)
-) %>% 
-modify_spanning_header(
-  all_stat_cols() ~ "**Viraemia After COVID**" # Add a header for the `by` variable
+  include = c(art_disruption_after, art_disruption_b4, sex, age_cat, mobility, community_type,
+              art_duration, viraemia_after_covid)
 )
 
-prr_table_full
+tbl_full <- tbl_summary_obj %>%
+  modify_spanning_header(
+    all_stat_cols() ~ "**Viraemia After COVID**"
+  )
+
+tbl_full
+
 ```
 
 ```{r}
@@ -2934,7 +2964,7 @@ tbl_ureg
 
 
 tbl_combined <- tbl_merge(
-  tbls = list(prr_table_full, tbl_ureg), # Tables to combine
+  tbls = list(tbl_full, tbl_ureg), # Tables to combine
   tab_spanner = c("**Viraemia After COVID**", "**Prevalence Risk Ratios**") # Headers for each table
 ) 
 # Display the combined table
@@ -2961,3 +2991,139 @@ tbl_combined
 | **Community type** |  |  |  |  |
 | Inland Community | 1,212 (96%) | 48 (3.8%) | \_\_ | \_\_ |
 | Fishing community | 87 (5.7%) | 1438 (94.3%) | 1.50 | (1.06, 2.15) |
+
+### MULTIVARIABLE REGRESSION
+
+```{r}
+model_nb1 <-df_viraemia %>% 
+  glm.nb(viraemia_after_dum ~ any_disruption_after + any_disruption_b4 + sex + 
+           age_cat+ mobility+community_type + art_duration, data = .)
+
+model_nb1 %>% tidy(exponentiate = TRUE,conf.int = TRUE)
+```
+
+```{r}
+df_forest <- model_nb1 %>% tidy(exponentiate = TRUE,conf.int = TRUE)%>% 
+  filter(term != "(Intercept)") %>% 
+  mutate(term = case_when(
+    term == "any_disruption_after" ~ "ART Disruption After (Yes)",
+    term == "any_disruption_b4" ~ "ART Disruption Before (Yes)",
+    term == "sexMale" ~ "Sex (Male vs Female)",
+    term == "age_cat30-39" ~ "Age: 30-39 vs <30",
+    term == "age_cat40-49" ~ "Age: 40-49 vs <30",
+    term == "mobilityLong-term resident" ~ "Mobility (Long-term Resident)",
+    term == "community_typeFishing community" ~ "Community Type (Fishing)",
+    term == "art_duration2-5 years" ~ "ART Duration: 2-5 years",
+    term == "art_duration>5 years" ~ "ART Duration: >5 years",
+    TRUE ~ term 
+  )) %>% 
+  arrange(desc(estimate))
+
+### saveRDS(df_forest, file = "df_forest_plot.rds")
+```
+
+```{r}
+ggplot(df_forest, aes(y = reorder(term, estimate), x = estimate)) +
+  geom_point(size = 3, color = "blue") + 
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, color = "black") +  
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +  
+  theme_minimal() +
+  labs(
+    title = "Forest Plot of Regression Results",
+    x = "Prevalence Ratio (95% CI)",
+    y = "Variables"
+  ) +
+  theme(
+    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    panel.grid.major.y = element_blank()  
+  )
+```
+
+### model stratified by sex
+
+```{r}
+model_nb_sex <- df_viraemia %>%
+  group_by(sex) %>% 
+  nest() %>% 
+  mutate(
+    model = map(data, ~ glm.nb(viraemia_after_dum ~ any_disruption_after + any_disruption_b4 + age_cat + mobility + community_type + art_duration, 
+                               data = .x)),
+    results = map(model, tidy) ,
+    ci = map(model, ~ confint(.x) %>% as_tibble()),
+    ci = map(ci, ~ .x %>%
+                    rename(ci.lower = `2.5 %`, ci.upper = `97.5 %`))
+  )
+```
+
+```{r}
+
+model_nb_sex2 <- df_viraemia %>%
+  group_by(sex) %>%
+  nest() %>%
+  mutate(
+    model = map(data, ~ glm.nb(viraemia_after_dum ~ any_disruption_after + any_disruption_b4 + age_cat + mobility + community_type + art_duration, 
+                               data = .x)),
+    results = map(model, ~ tidy(.x, exponentiate = TRUE, conf.int = TRUE)) 
+  )
+
+model_nb_sex2 <-  model_nb_sex2 %>% unnest(cols = results) %>% 
+  select(sex,term,estimate,conf.low,conf.high)
+```
+
+```{r}
+model_nb_sex2 %>% filter(sex == "Male")
+model_nb_sex2 %>% filter(sex == "Female")
+
+# model_nb_sex %>% pluck("model", 1) %>% tidy(exponentiate = TRUE)
+
+```
+
+```{r}
+# model_nb_sex %>% select(sex, results,ci)
+```
+
+```{r}
+# model_nb_sex %>% unnest(c(results,ci))
+
+```
+
+```{r}
+model_nb_sex %>% select(sex, results) %>% unnest(results)
+model_nb_sex %>% select(sex,ci) %>% unnest(ci)
+
+```
+
+```{r}
+model_nb_sex %>% select(sex, results,ci) %>% unnest(c(results,ci))  
+  
+```
+
+```{r}
+nb_model_male <- model_nb_sex %>% select(sex, results,ci) %>% unnest(c(results,ci)) %>% 
+  filter(sex == "Male")
+
+
+nb_model_female <- model_nb_sex %>% select(sex, results,ci) %>% unnest(c(results,ci)) %>% 
+  filter(sex == "Female")
+```
+
+```{r}
+nb_model_female
+nb_model_male
+```
+
+```{r}
+nb_model_female %>% 
+  select(term,estimate,ci.lower,ci.upper)
+```
+
+```{r}
+nb_model_male %>% 
+  select(term,estimate,ci.lower,ci.upper)
+```
+
+```{r}
+
+```
